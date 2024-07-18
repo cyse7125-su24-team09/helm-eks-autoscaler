@@ -1,0 +1,30 @@
+{
+  "branches": [
+    "main"
+  ],
+  "plugins": [
+    "@semantic-release/commit-analyzer",
+    "@semantic-release/release-notes-generator",
+    [
+      "semantic-release-helm",
+      {
+        "chartPath": "./",
+        "onlyUpdateVersion": true
+      }
+    ],
+    [
+      "@semantic-release/exec",
+      {
+        "prepareCmd": "helm package ./ -d ."
+      }
+    ],
+    [
+      "@semantic-release/github",
+      {
+        "assets": [
+          "*.tgz"
+        ]
+      }
+    ]
+  ]
+}
