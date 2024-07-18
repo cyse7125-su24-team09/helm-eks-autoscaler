@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "eks-cluster-autoscaler.fullname" . }}
+  labels:
+    {{- include "eks-cluster-autoscaler.labels" . | nindent 4 }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "eks-cluster-autoscaler.selectorLabels" . | nindent 6 }}
+  strategy:
+    {{ toYaml .Values.updateStrategy | nindent 4 | trim }}
+  template:
+    metadata:
+      labels:
+        {{- include "eks-cluster-autoscaler.labels" . | nindent 8 }}
+    spec:
+      imagePullSecrets:
+        - name: {{ .Release.Name }}-regcred
+      serviceAccountName: {{ .Values.rbac.serviceAccount.name }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag}}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: 
+            - ./cluster-autoscaler
+            - --cloud-provider={{ .Values.cloudProvider }}
+            - --skip-nodes-with-local-storage={{ .Values.extraArgs.skipNodesWithLocalStorage }}
+            - --skip-nodes-with-system-pods={{ .Values.extraArgs.skipNodesWithSystemPods }}
+            - --expander={{ .Values.extraArgs.expander }}
+            - --node-group-auto-discovery={{ .Values.extraArgs.nodeGroupAutoDiscovery }}
+            - --scale-down-enabled={{.Values.extraArgs.scaleDownEnabled}}
+            - --scale-down-unneeded-time={{.Values.extraArgs.scaleDownUnneededTime}}
+            - --scale-down-delay-after-add={{.Values.extraArgs.scaleDownDelayAfterAdd}}
+          env:
+            - name: AWS_REGION
+              value: {{ .Values.awsRegion }}
+            - name: SERVICE_ACCOUNT
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.serviceAccountName      
+          resources:
+          {{- toYaml .Values.resources | nindent 12 }}          
+          livenessProbe:
+            httpGet:
+              path: /health-check
+              port: 8085
+          ports:
+           - containerPort: 8085
