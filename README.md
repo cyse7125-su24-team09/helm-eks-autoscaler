@@ -1,10 +1,4 @@
 # helm-eks-autoscaler
-Sure, here is a README for your EKS Cluster Autoscaler Helm repository:
-
----
-
-# EKS Cluster Autoscaler Helm Chart
-
 This Helm chart deploys the Cluster Autoscaler on an Amazon EKS cluster. The Cluster Autoscaler automatically adjusts the size of the Kubernetes cluster when there are insufficient resources to schedule new pods or when nodes are underutilized.
 
 ## Prerequisites
