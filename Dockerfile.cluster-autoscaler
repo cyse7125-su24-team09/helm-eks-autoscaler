@@ -1,0 +1,1 @@
+FROM bitnami/cluster-autoscaler:latest
