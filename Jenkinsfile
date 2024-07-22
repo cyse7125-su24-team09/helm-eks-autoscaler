@@ -55,17 +55,45 @@ pipeline {
         branch 'main'
       }
       steps {
-        script {
           sh '''
-          npm install @semantic-release/changelog
           npm install @semantic-release/git
           npm install @semantic-release/exec
           npm install semantic-release-helm 
           npx semantic-release
           '''
-        }
+        script {
+              env.RELEASE_VERSION = readFile('.release-version').trim()
+           }
       }
-    }    
+    } 
+    stage('Mirror Images') {
+    when {
+          branch 'main'
+          }
+              steps {
+                withDockerRegistry([credentialsId: 'dockerHub', url: ""]) {
+                    withCredentials([usernamePassword(credentialsId: 'dockerHub', usernameVariable: 'DOCKERHUB_USERNAME', passwordVariable: 'DOCKERHUB_PASSWORD')]) {
+                        echo 'Creating a multi-arch builder...'
+                        sh "docker buildx create --name multiarch --use"
+
+                        echo 'Building and publishing app images....'
+                        sh """
+                        docker buildx build --push --platform linux/amd64,linux/arm64 -f Dockerfile.cluster-autoscaler --no-cache \
+                        -t $DOCKERHUB_USERNAME/eks-autoscaler:latest \
+                        -t $DOCKERHUB_USERNAME/eks-autoscaler:${env.RELEASE_VERSION} \
+                        .
+                        """
+                        echo 'Building and publishing flyway db migration images....'
+                        sh """
+                        docker buildx build --push --platform linux/amd64,linux/arm64 -f Dockerfile.metrics-server --no-cache \
+                        -t $DOCKERHUB_USERNAME/metrics-server:latest \
+                        -t $DOCKERHUB_USERNAME/metrics-server:${env.RELEASE_VERSION} \
+                        .
+                        """
+                    }
+                }
+            }
+    }   
   }
   post {
     success {
@@ -76,6 +104,7 @@ pipeline {
     }
     always {
       echo 'Pipeline complete'
+      sh 'docker system prune -a -f'
     }
   }
 }
