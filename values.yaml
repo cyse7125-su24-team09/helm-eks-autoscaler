@@ -1,4 +1,4 @@
-replicaCount : 1
+replicaCount: 3
 
 imagePullSecrets:
     type: kubernetes.io/dockerconfigjson
@@ -9,11 +9,11 @@ updateStrategy:
   type: RollingUpdate
   rollingUpdate:
     maxUnavailable: 1
+
 image:
   repository: niteshmore22/eks-autoscaler
   tag: latest
   pullPolicy: always
-
 
 rbac:
   create: true
@@ -40,17 +40,20 @@ extraArgs:
   scaleDownEnabled: true
   scaleDownUnneededTime: 10m
   scaleDownDelayAfterAdd: 1m
-  
-  
   nodeSelector: {}
   tolerations: []
   affinity: {}
 
 autoscaling:
+  enabled: true
   minReplicas: 1
-  maxReplicas: 10
-  targetCPUUtilizationPercentage: 50
-  targetMemoryUtilizationPercentage: 50
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+pdb:
+  create: true
+  maxUnavailable: 1
 
 service:
   type: ClusterIP
@@ -63,7 +66,6 @@ resources:
   requests:
     cpu: 100m
     memory: 100Mi
-
 
 metricsServer:
   enabled: true
